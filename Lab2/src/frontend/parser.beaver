@@ -59,7 +59,7 @@ EBNF Notation:
 // We define them here to avoid ambiguity later on
 // through forms such as Import = "" | concreteImport
 // in EBNF: Module = IDENT "{" imports, dec "}"
-Module = MODULE LCURLY Import Declaration RCURLY;
+Module = MODULE ID LCURLY Import* Declaration* RCURLY;
 
 // An import statement consists of 0 or more import statements.
 // As explained above, we omit the optional declaration here in favour of expressing it in Module.
@@ -71,7 +71,9 @@ Declaration = FuncDec | TypeDec | FieldDec;
 
 // A function declaration consists of a few things but it'll be omitted here for brevity
 // in EBNF: FuncDec = Accessibility Type IDENT "(" ParamList ")" "{" Statements? "}"
-FuncDec = AccSpec Type ID LPAREN Param* RPAREN LCURLY Statement* RCURLY;
+FuncDec = AccSpec Type ID LPAREN ParamList? RPAREN LCURLY Statement* RCURLY;
+
+ParamList = Type ID | Param COMMA Type ID;
 
 FieldDec = AccSpec Type ID SEMICOLON;
 
