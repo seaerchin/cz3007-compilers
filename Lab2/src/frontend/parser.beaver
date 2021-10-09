@@ -19,44 +19,14 @@
            PLUS, MINUS, TIMES, DIV, MOD, EQEQ, NEQ, LEQ, GEQ, LT, GT,
            LBRACKET, RPAREN, COMMA, RCURLY, LCURLY, SEMICOLON, RBRACKET, LPAREN, EQL;
 
-// Operator Precedence
-%left MODULE;
-%left INT;
-%left VOID;
+// Beaver parses precedence top down;
+// This means that we favour the IF over the ELSE and a statement like the below:
+// IF {...} IF {...} ELSE {...}
+// will get parsed as having a nested IF/ELSE in the outer IF rather than an outer IF/ELSE
+// NOTE: not sure if left associativity is actually correct or would nonassoc be better.
+// This shouldn't impact anything because the statement is required in full and it is not an binary op.
 %left IF;
 %left ELSE;
-%left WHILE;
-%left RETURN;
-%left BREAK;
-%left BOOLEAN;
-%left PUBLIC;
-%left TRUE;
-%left FALSE;
-%left INT_LITERAL;
-%left STRING_LITERAL;
-%left ID;
-%left TYPE;
-%left IMPORT;
-%left PLUS;
-%left MINUS;
-%left TIMES;
-%left DIV;
-%left MOD;
-%left EQEQ;
-%left NEQ;
-%left LEQ;
-%left GEQ;
-%left LT;
-%left GT;
-%left LBRACKET;
-%left RPAREN;
-%left COMMA;
-%left RCURLY;
-%left LCURLY;
-%left SEMICOLON;
-%left RBRACKET;
-%left LPAREN;
-%left EQL;
 
 // declaration of start symbol; no need to change this
 %goal Module;
@@ -72,7 +42,7 @@
 // If none can be found, the rule will be set to the lowest precedence.
 /* TODO: Flesh out the rule for Module, and add rules for other nonterminals. Here is an example
          of a rule you may want to add:
-         
+
    Accessibility = PUBLIC
 		  |
 		  ;
@@ -153,7 +123,10 @@ Assignment = LeftHandExpr EQL Expr;
 
 LeftHandExpr = ID | ArrayAccess;
 
-ArrayAccess = LeftHandExpr LBRACKET Expr RBRACKET;
+// An array access is a LHS expr then LBRACKET Expr RBRACKET
+// Because of a r/r conflict, we have to expand the definition of LHS
+// The expanded def is simply ID | ArrayAccess.
+ArrayAccess = ID LBRACKET Expr RBRACKET | ArrayAccess LBRACKET Expr RBRACKET;
 
 RightHandExpr = ArithExpr | ComplexArith;
 
@@ -171,7 +144,7 @@ MulOp = TIMES | DIV | MOD;
 
 Factor = MINUS Factor | Primary;
 
-Primary = LeftHandExpr | FuncCall | ArrayExpr | ID | INT_LITERAL | STRING_LITERAL | Bool | ParenExpr;
+Primary = LeftHandExpr | FuncCall | ArrayExpr | INT_LITERAL | STRING_LITERAL | Bool | ParenExpr;
 
 Bool = TRUE | FALSE;
 
@@ -189,10 +162,6 @@ This means that we express this as a list of 2 types of items.
 */
 ArrayExpr = LBRACKET ExprList RBRACKET;
 
-ExprList = ExprListItem+;
-
-ExprListItem = Expr | ExprComma? Expr;
-
-ExprComma = Expr COMMA;
+ExprList = Expr | Expr COMMA ExprList;
 
 /**/
