@@ -59,12 +59,14 @@ EBNF Notation:
 // We define them here to avoid ambiguity later on
 // through forms such as Import = "" | concreteImport
 // in EBNF: Module = IDENT "{" imports, dec "}"
-Module = MODULE ID LCURLY Import* Declaration* RCURLY;
+Module = MODULE ID LCURLY ImportList Declaration* RCURLY;
 
 // An import statement consists of 0 or more import statements.
 // As explained above, we omit the optional declaration here in favour of expressing it in Module.
 // In EBNF: Import = "import" IDENT ";"
 Import = IMPORT ID SEMICOLON;
+
+ImportList = Import | ImportList Import | ;
 
 // A declaration is function or type or field declaration
 Declaration = FuncDec | TypeDec | FieldDec;
