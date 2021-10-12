@@ -59,21 +59,23 @@ EBNF Notation:
 // We define them here to avoid ambiguity later on
 // through forms such as Import = "" | concreteImport
 // in EBNF: Module = IDENT "{" imports, dec "}"
-Module = MODULE ID LCURLY ImportList Declaration* RCURLY;
+Module = MODULE ID LCURLY ImportList DeclarationList RCURLY;
 
 // An import statement consists of 0 or more import statements.
 // As explained above, we omit the optional declaration here in favour of expressing it in Module.
 // In EBNF: Import = "import" IDENT ";"
 Import = IMPORT ID SEMICOLON;
 
-ImportList = Import | ImportList Import | ;
+ImportList = Import ImportList | ;
 
 // A declaration is function or type or field declaration
 Declaration = FuncDec | TypeDec | FieldDec;
 
+DeclarationList = Declaration DeclarationList | ;
+
 // A function declaration consists of a few things but it'll be omitted here for brevity
 // in EBNF: FuncDec = Accessibility Type IDENT "(" ParamList ")" "{" Statements? "}"
-FuncDec = AccSpec Type ID LPAREN OptParamList RPAREN LCURLY Statement* RCURLY;
+FuncDec = AccSpec Type ID LPAREN OptParamList RPAREN LCURLY StatementList RCURLY;
 
 // Equivalent to matching either paramlist or nothing
 OptParamList = ParamList | ;
@@ -92,7 +94,6 @@ AccSpec = PUBLIC | ;
 // NOTE: This might be wrong wrt the identifier portion
 Type = Primitive | Array | ID;
 
-// What is void... why make a language with void......
 Primitive = VOID | BOOLEAN | INT;
 
 // An array is a typename, left bracket then right bracket
@@ -102,12 +103,12 @@ Param = Type ID;
 
 Statement = LocalVar | Block | IfElse | While | Break | Return | ExprStatement;
 
+StatementList = Statement StatementList | ;
+
 LocalVar = Type ID SEMICOLON;
 
-Block = LCURLY Statement* RCURLY;
+Block = LCURLY StatementList RCURLY;
 
-// IfThenElse is da wae..........................................
-// The semantics of this language means that a statement if (False) { /.../ } will always return void wtf...
 IfElse = If OptElse;
 
 If = IF LPAREN Expr RPAREN Statement;
