@@ -71,7 +71,10 @@ Declaration = FuncDec | TypeDec | FieldDec;
 
 // A function declaration consists of a few things but it'll be omitted here for brevity
 // in EBNF: FuncDec = Accessibility Type IDENT "(" ParamList ")" "{" Statements? "}"
-FuncDec = AccSpec Type ID LPAREN ParamList? RPAREN LCURLY Statement* RCURLY;
+FuncDec = AccSpec Type ID LPAREN OptParamList RPAREN LCURLY Statement* RCURLY;
+
+// Equivalent to matching either paramlist or nothing
+OptParamList = ParamList | ;
 
 ParamList = Type ID | Param COMMA Type ID;
 
@@ -81,7 +84,7 @@ FieldDec = AccSpec Type ID SEMICOLON;
 // in EBNF: TypeDec = Accessibility Type IDENT "=" IDENT ";"
 TypeDec = AccSpec TYPE ID EQL STRING_LITERAL SEMICOLON; // TYPE is the terminal
 
-AccSpec = PUBLIC?;
+AccSpec = PUBLIC | ;
 
 // A type name is either a primitive, an array of an identifier.
 // NOTE: This might be wrong wrt the identifier portion
@@ -103,23 +106,27 @@ Block = LCURLY Statement* RCURLY;
 
 // IfThenElse is da wae..........................................
 // The semantics of this language means that a statement if (False) { /.../ } will always return void wtf...
-IfElse = If Else?;
+IfElse = If OptElse;
 
 If = IF LPAREN Expr RPAREN Statement;
 
 Else = ELSE Statement;
 
+OptElse = Else | ;
+
 While = WHILE LPAREN Expr RPAREN Statement;
 
 Break = BREAK SEMICOLON;
 
-Return = RETURN Expr? SEMICOLON;
+Return = RETURN OptExpr SEMICOLON;
 
 // NOTE: Better naming could be helpful here
 // Broken into 2 to allow the Or grouping to occur separately for readability
 ExprStatement = Expr SEMICOLON;
 
 Expr = Assignment | RightHandExpr;
+
+OptExpr = Expr | ;
 
 Assignment = LeftHandExpr EQL Expr;
 
