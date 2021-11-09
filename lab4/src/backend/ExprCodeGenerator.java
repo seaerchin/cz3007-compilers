@@ -171,7 +171,7 @@ public class ExprCodeGenerator extends Visitor<Value> {
 		var left = this.eval(nd.getLeft());
 		var right = this.eval(nd.getRight());
 		var type = nd.getOp();
-		System.out.println(type);
+		
 		// No need for default - all arguments are covered
 		switch (type) {
 			case "+":
