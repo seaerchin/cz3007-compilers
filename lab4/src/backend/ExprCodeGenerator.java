@@ -55,6 +55,12 @@ public class ExprCodeGenerator extends Visitor<Value> {
 	
 	/** We cache the statement list of the enclosing function for convenience. */
 	private final Chain<Unit> units;
+
+	// Given some value that MIGHT NOT be evaluated yet, force evaluation through visiting it and wrapping result.
+	// See `wrap` implementation + `visitCompExpr` implementation, where both left and right are wrapped
+	private Value eval(Expr e) {
+		return wrap(e.accept(this));
+	}
 	
 	private ExprCodeGenerator(FunctionCodeGenerator fcg) {
 		this.fcg = fcg;
@@ -97,23 +103,24 @@ public class ExprCodeGenerator extends Visitor<Value> {
 	/** Generate code for an integer literal. */
 	@Override
 	public Value visitIntLiteral(IntLiteral nd) {
-		/* TODO: return something meaningful here */
-		return null;
+		return IntConstant.v(nd.getValue());
 	}
 	
 	/** Generate code for a string literal. */
 	@Override
 	public Value visitStringLiteral(StringLiteral nd) {
-		/* TODO: return something meaningful here */
-		return null;
+		return StringConstant.v(nd.getValue());
 	}
 	
 	/** Generate code for a Boolean literal. */
 	@Override
 	public Value visitBooleanLiteral(BooleanLiteral nd) {
-		/* TODO: return something meaningful here (hint: translate 'true' to integer
-		 *       constant 1, 'false' to integer constant 0) */
-		return null;
+		// Taken from the hint: translated true to 1 and false to 0
+		var v = nd.getValue();
+		if (v) {
+			return IntConstant.v(1);
+		}
+		return IntConstant.v(0);
 	}
 	
 	/** Generate code for an array literal. */
@@ -129,37 +136,56 @@ public class ExprCodeGenerator extends Visitor<Value> {
 		}
 		return array;
 	}
-	
-	/** Generate code for an array index expression. */
-	@Override
-	public Value visitArrayIndex(ArrayIndex nd) {
-		/* TODO: generate code for array index */
-		return null;
+
+		/** Generate code for an array index expression. */
+		@Override
+		public Value visitArrayIndex(ArrayIndex nd) {
+		// To visit an array index, we need to get the array first.
+		var arr = this.eval(nd.getBase());
+		var idx = this.eval(nd.getIndex());
+		return Jimple.v().newArrayRef(arr, idx);
 	}
-	
+
 	/** Generate code for a variable name. */
-	@Override
-	public Value visitVarName(VarName nd) {
-		VarDecl decl = nd.decl();
-		// determine whether this name refers to a local or to a field
-		if(decl.isLocal()) {
-			return fcg.getSootLocal(decl);
-		} else {
-			SootClass declaringClass = fcg.getModuleCodeGenerator().getProgramCodeGenerator().getSootClass(decl.getModule());
-			Type fieldType = SootTypeUtil.getSootType(decl.getTypeName().getDescriptor());
-			return Jimple.v().newStaticFieldRef(Scene.v().makeFieldRef(declaringClass, decl.getName(), fieldType, true));
+		@Override
+		public Value visitVarName(VarName nd) {
+			VarDecl decl = nd.decl();
+			// determine whether this name refers to a local or to a field
+			if(decl.isLocal()) {
+				return fcg.getSootLocal(decl);
+			} else {
+				SootClass declaringClass = fcg.getModuleCodeGenerator().getProgramCodeGenerator().getSootClass(decl.getModule());
+				Type fieldType = SootTypeUtil.getSootType(decl.getTypeName().getDescriptor());
+				return Jimple.v().newStaticFieldRef(Scene.v().makeFieldRef(declaringClass, decl.getName(), fieldType, true));
+			}
 		}
-	}
-	
-	/** Generate code for a binary expression. */
-	@Override
-	public Value visitBinaryExpr(BinaryExpr nd) {
-		/* TODO: generate code for binary expression here; you can either use a visitor
-		 *       to determine the type of binary expression you are dealing with, or
-		 *       generate code in the more specialised visitor methods visitAddExpr,
+
+		/** Generate code for a binary expression. */
+		@Override
+		public Value visitBinaryExpr(BinaryExpr nd) {
+			/* TODO: generate code for binary expression here; you can either use a visitor
+			 *       to determine the type of binary expression you are dealing with, or
+			 *       generate code in the more specialised visitor methods visitAddExpr,
 		 *       visitSubExpr, etc., instead
 		 */
-		return null;
+		var left = this.eval(nd.getLeft());
+		var right = this.eval(nd.getRight());
+		var type = nd.getOp();
+		System.out.println(type);
+		// No need for default - all arguments are covered
+		switch (type) {
+			case "+":
+				return Jimple.v().newAddExpr(left, right);
+			case "-":
+				return Jimple.v().newSubExpr(left, right);
+			case "*":
+				return Jimple.v().newMulExpr(left, right);
+			case "/":
+				return Jimple.v().newDivExpr(left, right);
+			case "%":
+				return Jimple.v().newRemExpr(left, right);
+		}
+		return Jimple.v().newRemExpr(left, right);
 	}
 	
 	/** Generate code for a comparison expression. */
@@ -206,8 +232,8 @@ public class ExprCodeGenerator extends Visitor<Value> {
 	/** Generate code for a negation expression. */
 	@Override
 	public Value visitNegExpr(NegExpr nd) {
-		/* TODO: generate code for negation expression */
-		return null;
+		var val = this.eval(nd.getOperand());
+		return Jimple.v().newNegExpr(val);
 	}
 	
 	/** Generate code for a function call. */
