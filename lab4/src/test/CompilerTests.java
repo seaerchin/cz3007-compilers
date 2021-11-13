@@ -134,4 +134,19 @@ public class CompilerTests {
 				new Object[0],
 				42);
 	}
+
+	// Tests to see if nested expressions of the form:
+	// (a + b * c) - (d - e / f) will work
+	@Test public void testComplexBinExpr() {
+		runtest("module Test {" +
+						"  public int f() {" +
+						"    return (2 + 3 * 2) - (6 - 4 / 2);" +
+						"  }" +
+						"}",
+				"Test",
+				"f",
+				new Class<?>[0],
+				new Object[0],
+				4);
+	}
 }

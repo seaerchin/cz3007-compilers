@@ -49,8 +49,12 @@ public class StmtCodeGenerator extends Visitor<Void> {
 	/** Generates code for a break statement. */
 	@Override
 	public Void visitBreakStmt(BreakStmt nd) {
-		/* TODO: generate code for break statement (hint: use ASTNode.getEnclosingLoop and breakTargets;
-		 *       use units.add() to insert the statement into the surrounding method) */
+		// Step 1: First, we get the enclosing while loop
+		var whileStatement = nd.getEnclosingLoop();
+
+		// Step 2: Jump to the exit label associated with this loop
+		var exitLabel = breakTargets.get(whileStatement);
+		units.add(j.newGotoStmt(exitLabel));
 		return null;
 	}
 
@@ -95,9 +99,29 @@ public class StmtCodeGenerator extends Visitor<Void> {
 	/** Generates code for a while statement. */
 	@Override
 	public Void visitWhileStmt(WhileStmt nd) {
-		/* TODO: generate code for while statement as discussed in lecture; add the NOP statement you
-		 *       generate as the break target to the breakTargets map
-		 */
+		// Heavily follows lecture slides' pseudo code
+		// We first adopt the pattern in the If statement above,
+		// where we declare the NOPs and visit later to make them concrete.
+		// These 2 NOPs represent the block within the while and the first statement following the block
+		NopStmt within = j.newNopStmt();
+		units.add(within);
+		NopStmt following = j.newNopStmt();
+
+		// If we break, we have to exit to the following block
+		// NOTE: The lecture says there is continue (we jump back to within)
+		// But this file doesn't seem to have it
+		this.breakTargets.put(nd, following);
+
+		// Step 1: First generate the condition and evaluate it
+		var cond = ExprCodeGenerator.generate(nd.getExpr(), fcg);
+		units.add(j.newIfStmt(j.newEqExpr(cond, IntConstant.v(0)), following));
+
+		// Step 2: Generate code for body
+		nd.getBody().accept(this);
+
+		// Step 3: Add exit point
+		units.add(j.newGotoStmt(within));
+		units.add(following);
 		return null;
 	}
 }
